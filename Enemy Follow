@@ -1,0 +1,138 @@
+#include"EnemyAIController.h"
+#include"BehaviourTree/BlackboardComponent.h"
+#include"Perception/AIPerceptionComponent.h"
+#include"AIController.h"
+#include"EnemyCharacter.h"
+#include"PlayerCharacter.h"
+#include"NvigationSystem.h"
+#include"NavigationPath.h"
+
+AEnemyAIController::AEnemyController()
+{
+// Set up the perception component
+AIPerceptionComponent = CreateDefaultSubobject<UAIPerceptionComponent>(TEXT("AIPerceptionCpmponent"));
+AIPerceptionComponent->SetPerceptionUpdateRate(0.2f);  // Update perception every 0.2 seconds
+
+// Set up sight sense 
+UAISenseConfig_Sight* SightConfig = CreateDefaultSubobject<UAISenseConfig_Sight>(TEXT("SightConfig"));
+SightConfig-> SightRadius = 1000.0f;
+SightConfig->SightAngle = 120.0f;
+SightConfig->LoseSightRadius = 1200.0f;
+SightConfig-> PeripheralVisionAngle = 30.0f;
+AIPerceptionComponent-> SetSenseConfig(SightConfig); 
+
+// Set up hearing sense
+UAISenseConfig_Hearing* HearingConfig = CreateDefaultSunobject<UAISense_Hearing>(TEXT("HearingConfig"));
+HearingConfig->HearingRange = 1500.0f;
+HearingConfig-> HearingSensitivity = 0.8f;
+AIPerceptionComponent -> SetSenseConfig(HearingConfig);
+
+// Set up smell sense
+UAISenseConfig_Smell* SmellConfig = CreateDefaultSubobject<UAISenseConfig_Smell>(TEXT("SmelllConfig"));
+SmellConfig->SmellRadius = 500.0f;
+SmellConfig->LoseScentRate = 0.5f;
+AIPerceptionComponent -> SetSenseConfig(SmellConfig);
+}
+
+void AEnemyAIController::OnPossess(APawn* InPawn)
+{
+Super::OnPossess(InPawn);
+EnemyCharacter = Cast<AEnemyCharacter>(InPawn);
+if(EnemyCharacter)
+{
+
+// Load behaviour tree
+if(BehaviourTree)
+{
+RunBehaviourTree(BehaviourTree);
+}
+
+// Initialize blackboard values 
+BlackboardComp-> SetValueAsObject(TEXT("SelfActor"), GetPawn());
+BlackboardComp-> SetValueAsObject(TEXT("PlayerActor"), GetWorld()->GetFirstPlayerController()->GetPawn());
+}
+}
+
+void aEnemyAIController::Tick(float DeltaTime)
+{
+Super::Tick(DeltaTime);
+if(EnemyCharacter)
+{
+
+// Update blackboard values
+BlackboardComp->SetValuesAsVector(TEXT("PlayerLocation"), GetWorld()-> GetFirstPlayerController()-> GetPawn()->GetActorLocation());
+BlackboardComp->SetValueAsFloat(TEXT("DistanceToPlayer"), (GetWorld()->GetFirstPlayerController()-> GetPawn()-> GetActorLocation()- GetPawn()-> GetActorLocation()).Size.());
+
+// Implement adavanced perception checks and decision making
+if(AIPerceptionComponent->PerceiveActors(Trray< TSubclassOf<UAISenseConfig>>
+{
+UAISenseConfig_Sight::StaticClass()}))
+{
+
+// Enemy has detected the player
+// Update blackboard value to indicate player is seen
+
+BlackboardComp -> SetValueAs Bool(TEXT("PlayerSeen"), true);
+}
+else
+{
+
+// Enemy has lost sight of the player
+// Update blackboard value to indicate player is not seen
+
+BlackboardComp-> SetValueAsBool(TEXT("PlayerSeen"), false);
+}
+
+// Check if the player is within hearing range
+
+if(AIPerceptionComponent-> PerceieveActors(TArray<TSubclassOf<UAISenseConfig>>
+{
+UAISenseConfig_Hearing::StaticClass()}))
+
+{
+
+// Enemy has heard the player
+// Update blackboard value to indicate player is heard
+
+BlackboardComp->SetValueAsBool(TEXT("PlayerHead"), true);
+}
+else
+{
+
+// Enemy has not heard the player
+// Update blackboard value to indicate player is not heard
+
+BlaxkboardComp-> SetVlueAsBool(TEXT("PlayerHead"), false);
+}
+
+// Check if the player is within smelling range
+
+if(AIPerceptionComponent -> PerceiveActors(TArray<TSubclassOf<UAISenseConfig>>
+{
+UAISenseConfig_Smell::StaticClass()}))
+
+{
+
+// Enemy has smelled the player
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
