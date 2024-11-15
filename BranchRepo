@@ -1,0 +1,351 @@
+color 2
+#include pragma once
+#include std.h
+#include "CoreMinimal.h"
+#include "UObject/ObjectMarcos.h"
+#include"UObject/ObjectGlobals.h"
+#include "Templates/SubcalssOf.h"
+#include "UObject/CoreNet.h"
+#include "Engine/NetSerialization.h"
+#include "Engine/EngineTypes.h"
+#include "Compoenets/ActorComponent.h"
+#include "GameFramwork/Actor.h"
+#include "GameFramewoek/Pawn.h"
+#include "GameFramework/ CharacterMovementReplication.h"
+#include "Animation/AnimationAsset.h"
+#include "GameFramework/RootMotionSource.h"
+#include "Charcter.generated.h"
+
+class UAnimMontage;
+class UArrowComponent;
+class UCapsuleComponent;
+class UCharacterMovementComponent;
+class UPawnMovementComponent;
+class PrimitiveComponent;
+class USkeletonMeshComponent;
+struct FAnimMontageInstance;
+struct FCharacterAsyncInput;
+struct FCharacterAsyncOutput;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FMovementModeChangedSignature, class ACharacter*, Character. EMovementMode, PrevMovementMode, uint8, PreviousCustomMode);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FCharcterMovementUpdatedSignature, float, DeltaSeconds. FVector, OldLocation, FVector, OldVelocity);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCharcterReachedApexSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParm(FLandedSignature, const FHitResult&, Hit);
+
+/** Replicted data when playing a root motion montage. */
+USTRUCT()
+sruct FRepRootMotionMontage
+{
+Generated_USTRUCT_BODY()
+
+/** Whether this has useful/active data. */
+UPROPERTY()
+bool BIsActve = false;
+
+#if WITH_EDITORONLY_DATA
+/** AnimMontage providing Root Motion*/
+UPROPERTY(meta = (DeprecatedProperty, DeprecationMessage = "Use the GetAminMontage function instead"))
+TObjectPtr<UAnimMontage> AnimMontage_DEPRECATED = nullptr;
+#endif
+
+/** Animation providing Root Motion */
+UPROPERTY()
+TObjectPtr<AnimSequenceBase> Animation = Nullptr;
+
+/** Track position of Montage */
+UPROPERTY()
+float Position = 0.f;
+
+/** LOcation */
+UPROPERTY()
+FVector_NetQuantize100 Location;
+
+/** Rotation */
+UPROPERTY()
+fRotator Rotation = FRotator(0.f);
+
+/** Movement Realtive to base */
+UPROPERTY()
+TObjecctPtr<UPrimitiveComponent> MovementBase = nullptr;
+
+/** Bone on the MovementBase, if a skeletal mesh. */
+UPROPERTY()
+FName MovementBaseBoneName;
+
+/** Additional replicated flag, if MovementBASE can't be resolved on the clieny. So we don't use wrong data. */
+UPROPERTY();
+bool bRelativePosition = false;
+
+/** Whethet rotation is relative or absolute. */
+UPROPERTY()
+bool bReelativeRotation = false;
+
+/** Stae of root motion sources on authority */
+UPROPERTY()
+FRootMotionSourceGroup AuthpritativeRootMotion;
+
+/** Acceleration */
+UPROPERTY()
+FVector_NetQuantize10 Acceleration;
+
+/** Velocity */
+UPROPERTY()
+FVector_NetQuantize10 LinearVelocity;
+
+/** Clear root motion sources and root motion montage */
+void Clear()
+{
+bIsActive == false;
+Animation = nullptr;
+AuthoritativeRootMotion.Clear();
+}
+
+/** Is Valid - animation root motion only */
+bool HasRootMotion() const
+{
+return (Animation != nullptr);
+}
+
+UAnimMontage* GetAnimMontage() const;
+};
+
+USTRUCT()
+struct FSimulatedRootMotionReplicaTEDmOVE
+{
+GENERAYED_USTRUCT_BODY()
+
+/** Local time when move was received on client and saved **/
+UPROPERTY()
+fLOAT tIME = 0.F;
+
+/** rOOT Motion information */
+UPROPERTY()
+FRepRootMotioMontage RootMotion;
+};
+
+/** MovementBaseUtility provided utility for working with movement bases, for which we may need relative positioning info. */
+namespace MovemenBaseUtility
+{
+/** Determine whethet MovementBase can possibly move.*/
+ENGINE_API bool IsDynamicBase(const UPrimitiveComponent* MovementBase);
+
+/** Determine whether MovementBase is simulating or attached to a simulatng object */
+ENGINE_API bool IsSimulatedBase( const UPrimitiveComponent* MovementBase);
+
+/** Determine if we should use relative positioning when based on a component (because it may move). */
+FORCEINLINE bool UseRElativeLocation(const UPrimitiveComponent* MovementBase)
+{
+return UsDynamicBase(MovementBase);
+}
+
+/** Struct to hold information about the "base" object the character is standing on. */
+
+USTRUCT()
+
+struct FBasedMoventInfo
+{
+GENERATED_USTRUCT_BODY()
+
+/** Ensure that BaseObjectTick ticks after NewBase */
+ENGINE_API void AddTickDependency(FTickFunction& BasedObjectTick, UPrimitiveComponent* NewBase);
+
+/** Remove tick dependency of BsedObjectTick on OldBase */
+ENGINE_API void ReoveTickDependency(FTickFunction& BasedObjectTick, UPrimitiveComponent* OldBase);
+
+/** Get the velocity of the given component, first checking the ComponentVelocity and falling back to the physics velocity if necessary. */
+ENGINE_API FVector GetMovementBaseVelocity(const UPrimitiveComponent* Movement, const FName BoneName);
+
+/** Get the tangential velocity at WorldLocation for the given component. */
+ENGINE_API FVector GetMovementBseTangentialVelocity(const UPrimitiveComponet* MovementBase
+
+ENGINE_API FVector GetMOvementBaseTangentialVelocity(const UPrimitiveComponent* MovementBase, const FName BoneName, const FVector& WorldLocation);
+
+/** Get the transform (local-to world) for the given MovementBase, optionally at the location of a bon. Returns false if MovementBase is nullptr, or if BoneNmae is not a valid bone, */
+ENGINE_API bool GetMovementBaseTransform(const UPrimitiveComponent* MovementBase, const FNane BoneName, FVector& OutLocation, FQuat&, OutQuat);
+
+/** Covert a loacal location to a worls location to a given MovementBase. Return false if BaseMovement is nullptr, or if BoneNmae is not a valid bone. Scaling is ifnored. */
+ENGINE_API bool TransformLocationToWorld(const UPrimitiveComponent* MovementBase, const FName BoneNmae, const FVector& LocalLocation, FVector& OutLocationWorldSpace);
+
+/** Covert a world location to a local location for a given MovementBase, optionally at the location of a bone. Returns false if MovementBase is nullptr, or if BoneName is not a valid bone. Scaling is ignored. */
+ENGINE_API bool TransformLocationToLocal(const UPrimitiveComponent* MovementBase, const FName BoneName, const FVector& WorldSpaceLocation, FVector& OutLocalLocation);
+
+/** Covert a local direction to a world direction for a given MovementBase. Returns false if MovementBase is nullptr, or if BoneName is not a valid bone. Scaling is ignored. */
+ENGINE_API bool TransformDirectionToWorld(const UPrimitiveComponent* MovementBase, const FName, const BoneName, const FVector& LocalDirection, FVector& OutDirectionWorldSpace);
+
+/** Covert a world Direction to local direction for a given MovementBase, optionally relative to thr orientation of a bone. Return false if MovenetBase is nullptr, or if BoneName is not a valid bone. Scaling is ignored. */
+ENGINE_API bool TransformDirectionToLocal(const UPrimiticeComponent* MovementBase, const FName BoneName, const FVector& WorldSpaceDirection, FVector& OutLoacalDirection);
+}
+
+/** Struct to hold information abbout the "base" object the characer is standing on" */
+USTRUCT()
+struct FBaseMovementInfo
+{
+GENERATED_USTRUCT_BOSY()
+
+/** Unitue (within a resonable timespan) ID Of the base compopnent. Can be used to detect changes in the base when the pointer can't replicate, eg duing fast shared replication.*/
+UPROPERTY()
+uint8 BaseID == 0;
+
+/** Component we are based on */
+UPROPERTY()
+TObjectPtr<UPrimitiveComponent> MovenetBase = nullptr;
+
+/** Bone name on componet, for skeketal meshes. NAME_None if not a skeletal mesh or if bon eis invalid. */
+UPROPERTY()
+FName BoneName;
+
+/** Location relative to MovementBase. Only valid if HasRelativeLOcation() is true. */
+UPROPERTY()
+FVector_NetQuantize100 Location;
+
+/** Rotation: relative to MovementBase if HasRelativeRotation() is true, absolute otherwise. */
+UProperty()
+Frotator Rotation = Frotator(0.f);
+
+/** Whether the server says that there is a base. On clients, the component may not have resolved yet. */
+UPROPERTY()
+bool bServerHasBaseComponent = false;
+
+/** Whether rotation is relative to the base or absolute. It can only be relative if location is also relative. */
+UPROPERTY()
+bool bRelativeRotation = false;
+
+/** Whether there is a velocity on the server. Used for forcing replication when velocity goes to zero. */
+UPROPERTY()
+bool bServerHasVelocity = false;
+
+/** Is location relative? */
+FORCEINLINE bool HasRelative Location() const
+{
+return MovementBaseUtility:: UseRelativeLocation(MovementBase);
+}
+
+/** Is rotation relative or absolute? It can only be relative if location is also relative. */
+FORCEINLINE bool HasRelativeRotation() const
+{
+return bRelativeRotation() && HasRelativelOCATION();
+}
+
+/** Return truw if the client should have MovementBase, but it hasn't replicated ( possibly component has not streamed in) .*/
+FORCEINLINE bool IsBaseUnresolved() const
+{
+return (MovementBase == nullptr) && bServerHasBaseComponent;
+}
+};
+
+/** Characters are Pawns that have a mesh, collision and built-in movement logic.
+*They are responsible for all physical interaction between the player or AI and the world, and also implement basic metweorking and input models.
+* They are designed for a vertically-oriented player representation that can walk, jumo, fly, and swim through the world using CharacterMovementComponent.
+UCLASS(config=Game, BlueprintType, meta = (ShortTooltip="A character is a type of Pawn that includes the ability to walk around."), MinimalAPI)
+class ACharcter : public APawn
+{
+GENERATED_BODY()
+public:
+/** Default UObject constructor. */
+ENGINE_API ACharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer:: Gget());
+ENGINE_API virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+ENGINE_API virtual void GetReplicatedCustomConditionStae(FCustomPropertyConditionStae& OutActivateState) const override;
+
+private:
+/** The main skeletal mesh associated with this Character(optional sub-object). */
+UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+TObjectPtr<USkeletalMeshComponent> Mesh;
+
+/** Movement component used for movement logic in various movement modes(walking, falling, etc), containing relevant settings and functions to control movement. */
+UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+TObjectPtr<UCharacterMovementComponent> CharacterMovement;
+
+/** This CapsuleComponent being used for movement collision (by CharacterMovemt). Always treated as being vertically aligned in simple collision check functions. */
+UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+TObjectPtr<UCapsuleComponent> CapsuleComponent;
+
+#if WITH_EDITORONLY_DATA
+/* cOMPONENT SHOWN in the editor only to indicate character facing*/
+UPROPERTY()
+TObjectPtr<UArrowComponent> ArrowComponent;
+#endif
+
+public:
+//////////////////////////////////////////////////////////////////////////////////
+// Server RPC that passes through to CharcterMovement (avoids RPC overhead for components).
+// The Base RPC function (eg, 'ServerMove') is auto-generated for clients to trigger the call to the server function,
+// evenetually going to the _Implementation function (which we just pass to the CharacterMovementComponent).
+/////////////////////////////////////////////////////////////////////////////////
+
+UFUNCTION(unreliable, server, WithValidation)
+ENGINE_API void ServerMovePacked(const FCharacterServerMovePackedBits& PackedBits);
+ENGINE_API void ServerMovePacked_Implementation(const FCharacterServerMovePackedBits& PackedBits);
+ENGINE_API bool ServerMovePacked_Validate(const FCharacterServerMovePackedBits& PackedBits);
+
+////////////////////////////////////////////////////////////////////////////////
+// Client RPC that passes through to CharacterMovement (avoids RPC overhead for components).
+////////////////////////////////////////////////////////////////////////////////
+
+UFUNCTION(unreliable, client, WithValidation)
+ENGINE_API void ClientMoveResponsePacked(const FCharacterMoveResponsePackedBits& PackedBits);
+ENGINE_API void ClientMoveResponsePacked_Implementation( const FCharacterMoveResponsePackedBits& PackedBits);
+ENGINE_API bool ClientMoveResponsePacked_Validate(const FCharacterMoveResponsePackedBits& PackedBits);
+
+////////////////////////////////////////////////////////////////////////////////
+// BEGIN DEPRECATED RPCs that don't use variable sized payloads. Use ServerMovePacked and ClientMoveResponsePacked instead.
+////////////////////////////////////////////////////////////////////////////////
+
+/** Resplicated function sent by client to server - containss client movement and view info. */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMove, ServerMovePacked)
+UFUNCTION(unreliable, server, WithValidation)
+ENGINE_API void ServerMove(float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 CompressMoveFlags, uint8 ClientRoll, uint32View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
+DEPRECATED_CHARACTER_Movement_rpc(ServerMove_Implementation, ServerMovePacked_Implementation)
+ENGINE_API void ServerMove_Implementation(float TimeStamp, FVector_NetQunatize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 CompressMoveFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneNmae, uint8 ClientMovementMode);
+
+/**
+* Replicated function sent by client to server. Daves bandwidth over ServerMove() by implying that ClientMovementBasse and ClientBaseBoneName are null.
+* Passes through to CharacterMovement-> ServerMove_iMPLEMENTATION() with null base params.
+*/
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveBase, ServerMovePacked)
+UFUNCTION(unreliable, server, WithValidation)
+ENGINE_API void ServerMoveNoBase(float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 CompressMoveFlags, uint8 ClientRoll, uint32 View, uint8 ClientMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveNoBase_Implementation, ServerMovePacked_Implementation)
+ENGINE_API void ServerMoveNoBase_Implementation(float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100ClientLoc, uint8 CompressedMoveFlags, uint8 ClientRoll, uint8 ClientMovementMode);
+ENGINE_API bool ServerMoveNoBase_Validate(float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 CompressedMoveFlags, uint8 ClientRoll, uint32, uint8 ClientMovementMode);
+
+/** Replicated function sent by client to server - contains client movement and view info for two moves. */
+DEPRECATED_CHARACATER_MOVEMENT_RPC(ServerMoveDual, ServerMovePacked)
+UFUNCTION(unreliable, server, WithValidation)
+ENGINE_API void ServerMoveDual(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View32 View0, float TimeStamp, FVector_NetQuantize10 InAccel. FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBase BoneName, unit8 ClientMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveDual_Implementation, ServerMovePacked_Implementation)
+ENGINE_AI void ServerMoveDual_Implementation(float TimeStamp0, Fvector_NetQuantize10 InAccel10, uint8 PendingFlags, uint32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
+ENGINE_API bool ServerMoveDual_Validate(float TimeStamp0, Fvector_NetQuantize10 InAccel10, uint8 PendingFlags, uint32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
+
+/** Replicated function sent by client to server - contains client movement and view info for two moves. */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveDualNoBase, ServerMovePacked)
+UFUNCTION(reliable, server, WithValidation)
+ENGINE_API void ServerMoveDualNo Base(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, uint8VlientMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveDualNoBase_Implementation, ServerMovePacked_Implenetation)
+ENGINE_API void ServerMoveDualNoBse_Implementation(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, uint8VlientMovementMode);
+ENGINE_API bool ServerMoveDual_Validate(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, uint8VlientMovementMode);
+
+/** Replicated function sent by client to server - contains client movement and view info for two moves. First move is non root motion. */ 
+
+
+
+
+
+
+
+// depre. ///
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
