@@ -325,7 +325,98 @@ ENGINE_API void ServerMoveDualNoBse_Implementation(float TimeStamp0, FVector_Net
 ENGINE_API bool ServerMoveDual_Validate(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, uint8VlientMovementMode);
 
 /** Replicated function sent by client to server - contains client movement and view info for two moves. First move is non root motion. */ 
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveDualHybridRootMotion, ServerMovePacked)
+UFUNCTION(unreliable, server,WithValidation)
+ENGINE_API void ServerMoveDualHybridRootMotion(float TimeStamp0, FVector_NetQuantize10 InAccel0, uint8 PendingFlags, uint32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 ClientRoll, uint32 View, UPrimitimeComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveDualHybridRootMotion_Implementation, ServerMovePacked_Implementation)
+ENGINE_API void ServerMoveDualHybridRootMotion_Implementation(float TimeStamp0, FVector_NetQuantize10, InAccel0, uint8 PendingFlags, uint32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
+ENGINE_API bool ServerMoveDualHybridRootMotion_Validate(float TimeStamp0, FVector_NetQuantize10, InAccel0, uint8 PendingFlags, uint32 View0, float TimeStamp, FVector_NetQuantize10 InAccel, FVector_NetQuantize100 ClientLoc, uint8 NewFlags, uint8 ClientRoll, uint32 View, UPrimitiveComponent* ClientMovementBase, FName ClientBaseBoneName, uint8 ClientMovementMode);
 
+/** Resending an (important) old move. Process it if not already processed. */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveOld, ServerMovePacked)
+UFUNCTION(unreliable, server, WithValidation)
+ENGINE_API void ServerMoveOld(float OldTimeStamp, FVector_NetQuantize10, OldAccel, uint8 OldMoveFlags);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ServerMoveOld_Implementation, ServerMovePacked_Implementation)
+ENGINE_API void ServerMoveOld_Implementation(float OldTimeStamp, FVector_NetQuantize10 OldAccel, uint8 OldMoveFlags);
+ENGINE_API bool ServerMoveOld_Validate(float OldTimeStamp, FVector_NetQuantize10 OldAccel, uint8 OldFlags);
+
+/** If no client adjustment is needed after processing received ServerMove(), ack the good move so client can remove it from SavedMoves */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAckGoodMove, ClientResponsePacked)
+UFUNCTION(unreliable, client)
+ENGINE_API void ClientAckGoodMove(float TimeStamp);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAckGoodMove_Implementation, ClientMoveResponsePacked_Implementation)
+ENGINE_API void ClientAckGoodMove_Implementation(float TimeStamp);
+
+/** Replicate position correction to client, associated with a timestamp servermove. Cloent will replay subsequent moves after applying adjustment. */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAdjustmentPosition, ClientMoveResponsePcked)
+UFUNCTION(unreliable, client)
+ENGINE_API void ClientAdjustmentPosition(float TimeStamp, FVector NewLoc, FVector NewVel, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAdjustmentPosition_Implementation, ClientMoveResponsePacked_Implementation)
+ENGINE_API void ClientAdjustPosition_Implementation(float TimeStamp, FVector NewLoc, FVector NewVel , UPrimitiveComponent* NewBase, FName NewBaseBoneNanme, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientVeryShortAdjstPosition, ClientMoveResponsePacked)
+/* Bandwidth saving version, when velocity is zeroed. */
+UFUNCTION(unreliable, client)
+ENGINE_API void ClientVeryShortAdjustPosition(float TimeStamo, FVector NewLoc, UPrimitiveComponent* NewBase, FName NewBaseBoneName, bool bBaseRelativePosition, uint8 ServerMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientVeryShortAdjustPosition_Implementation, ClientMoveResponsePacked_Implementation)
+ENGINE_API void ClientVeryShortAdjustOosition_Implementation(float TimeStamp, FVector NewLoc, UPrimitiveComponent* NewBase, FName, NewBaseBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+
+/** Replicate position correction to client when using root motion for movement. ( animation root motion specific) */
+DEPECATED_CHARACTER_MOVEMENT_RPC(ClientAdjustRootMotionPosition, Client, ClientMoveResponsePacked)
+UFUNCTION(unreliable, client)
+ENGINE_API void ClientAdjustRootMotionPosition(float TimeStamp, float ServerMontageTrackPosition, FVector, ServerLoc, FVector_NetQuantizeNormal ServerRotation, float ServerVelZ, UPrimitiveComponenet* ServerBase, FName ServerBoneName, bool bBaseRelativePosition, uint8 ServerMovementMode);
+DEPRECATED_CHARACTER+Movement_RPC(ClientAdjustRootMotionPosition_Implementation, ClientMoveResponsePacked_Implementation)
+ENGINE_API void ClientAdjustRootMotionPosition_Implementation(float TimeStamp, float ServerMontageTrackPosition, FVector ServerLoc, FVector_NetQuantizeNormal ServerRotaion, float ServerVelZ, UPrimitiveComponent* ServerBase, FName ServerBoneName, bool bHasBse, bool bBaseRelativePosition, uint8 ServerMovementMode);
+
+/** Replicate root motion source correction to client when using root motion for movement. */
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAdjustRootMotionSourcePosition, ClientMoveResponsePacked)
+UFUNCTION(unreliable, client)
+ENGINE_API void ClientAdjustRootMotionSourcePosition(float TimeStamp, FRootMotionSiurceGroup ServerRootMotion, bool bHasAnimRootMotion, float ServerMontageTrackPosition, FVector ServerLoc, FVector_NetQuantizeNormal ServerRotation, float ServerVelZ, UPrimitiveComponent* ServerBase, FName, FName ServerBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+DEPRECATED_CHARACTER_MOVEMENT_RPC(ClientAdjustRootMotionSourcePosition_Implementation(float TimeStamp, FRootMotionSourceGroup ServerRootMotion, bool bHasAnimRootMotion, flOat ServerMontageTrackPosition, FVector ServerLoc, FVector_NetQuantizeNormal ServerRotation, float ServerVelZ, UPrimitiveComponent* ServerBase, FName ServerBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+ENGINE_API void ClientAdjustRootMotionSourcePosition_Implementation(float TimeStamp, FRootMotionSourceGroup ServerRootMotion, bool bHasAnimRootMotion, float ServerMontageTrackPosition, FVector ServerLoc, FVector_NetQuantizeNormal ServerRotation, float ServerVelZ, UPrimitiveComponent* ServerBase, FName SerevrBoneName, bool bHasBase, bool bBaseRelativePosition, uint8 ServerMovementMode);
+
+/////////////////////////////////////////////////////////////////////////////////////////////
+// END DEPRECATED RPCs
+/////////////////////////////////////////////////////////////////////////////////////////////
+
+public:
+/** Returns Mesh subobject */
+FORCEINLINE class USkeletalMeshComponent* GetMesh() const { return Mesh;}
+
+/** Name of the MeshComponent. Use this name if you want to present creation of the component( with ObjectInitializer.DoNotCreateDefaultSubobject). */
+static ENGINE_API FName MeshComponentName;
+
+/** Returns CharacterMovement subobject **/
+template <class T>
+FORCEINLINE_DEBUGGABLE T* GetCharacterMovement() const
+{
+return CastChecked<T>(CharacterMovement, ECastCheckkedType::NullAllowed);
+}
+FORCEINLINE UCharcterMovementComponent* GetCharacterMovement() const { return CharcterMovement; }
+
+/** Name of the CharacterMovement component. Use this name if you want to use a different class( with ObjectInitializer.SetDefaultSubobjectClass). */
+static ENGINE_API FName CharacterMovementComponentName;
+
+/** Returns CapsuleComponent subobject **/
+FORCEINLINE class UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent;}
+
+/** Name of the CapsuleComponent. */
+static ENGINE_API FName CapsuleComponentName;
+
+#if WITH_EDITORONLY_DATA
+/** Returns ArrowComponent subobject **/
+class UArrowComponent* GetArrowComponent() const { return ArrowComponent;}
+#endif
+
+/** Sets the component component the character is walking on, used by CharacterMovement walking movement to be able to follow dynamic. */
+ENGINE_API virtual void SetBase(UPrimitiveComponent* NewBase, const FName BoneName = NAME_None, bool bNotifyActor = true);
+
+/**
+* Cache mesh offset from capsule. This is used as the target for network smoothing interpolation, when the mesh is offset with lagged smoothing.
+* This is automatically called during initialization; call this at runtime if you intend to change the default mesh offset from the capsule.
+*/
+UFUNCTION(BlueprintCallable, Category=Character)
+EN
 
 
 
